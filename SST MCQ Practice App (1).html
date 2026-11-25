@@ -1,0 +1,957 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SST Topic-Wise MCQ Practice App</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Font: Inter -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+    }
+    .card-hover {
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .card-hover:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 12px 24px -8px rgba(15, 23, 42, 0.14);
+    }
+    .fade-in {
+      animation: fadeIn 0.25s ease-in-out;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col text-slate-800 bg-gradient-to-br from-indigo-50 via-slate-50 to-emerald-50">
+
+  <!-- Top Navigation Header -->
+  <header class="bg-white/95 backdrop-blur-md border-b border-slate-200 sticky top-0 z-30 shadow-sm">
+    <div class="max-w-5xl mx-auto px-4 py-3.5 flex flex-wrap items-center justify-between gap-3">
+      <!-- App Brand Logo -->
+      <div class="flex items-center gap-3 cursor-pointer" onclick="goHome()">
+        <div class="w-11 h-11 rounded-2xl bg-indigo-600 text-white flex items-center justify-center font-extrabold text-xl shadow-md">
+          SST
+        </div>
+        <div>
+          <h1 class="text-lg sm:text-xl font-extrabold text-slate-900 leading-tight">SST Practice Zone</h1>
+          <p class="text-xs text-slate-500 font-medium">SST Area aur Topic chunein aur MCQs solve karein</p>
+        </div>
+      </div>
+
+      <!-- Header Action Buttons -->
+      <div class="flex items-center gap-2">
+        <button onclick="openAddModal()" class="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white text-sm font-bold shadow-sm transition flex items-center gap-1.5">
+          <span>+ Naya MCQ Daalein</span>
+        </button>
+        <button onclick="openDataModal()" class="px-3.5 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-bold transition" title="Data Export / Reset">
+          ⚙️ Data
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content Container -->
+  <main class="flex-1 max-w-5xl w-full mx-auto px-4 py-6 sm:py-8">
+    <!-- Toast Notification Banner (Replaces alert) -->
+    <div id="toastBox" class="hidden fixed bottom-5 right-5 z-50 bg-slate-900 text-white px-4 py-3 rounded-2xl shadow-xl text-sm font-semibold flex items-center gap-2 fade-in">
+      <span id="toastMsg">Message</span>
+    </div>
+
+    <!-- Breadcrumb Bar -->
+    <nav id="breadcrumbBar" class="mb-6 flex flex-wrap items-center gap-2 text-sm font-medium text-slate-600 bg-white px-4 py-3 rounded-2xl border border-slate-200 shadow-sm">
+      <button onclick="goHome()" class="text-indigo-600 hover:underline font-bold flex items-center gap-1.5">
+        🏠 Sabhi SST Areas
+      </button>
+      <span id="crumbAreaWrap" class="hidden items-center gap-2">
+        <span class="text-slate-400">/</span>
+        <button id="crumbAreaBtn" onclick="selectArea(currentArea)" class="text-indigo-600 hover:underline font-bold"></button>
+      </span>
+      <span id="crumbTopicWrap" class="hidden items-center gap-2">
+        <span class="text-slate-400">/</span>
+        <span id="crumbTopicText" class="text-slate-800 font-extrabold"></span>
+      </span>
+    </nav>
+
+    <!-- VIEW 1: SST AREAS SELECTION (HOME SCREEN) -->
+    <section id="viewAreas" class="fade-in">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+        <div>
+          <h2 class="text-2xl sm:text-3xl font-extrabold text-slate-900">1. Apna SST Area Chunein</h2>
+          <p class="text-slate-600 text-sm sm:text-base mt-1">Kisi bhi vishay (Area) par click karke uske topics dekhein.</p>
+        </div>
+        <button onclick="startAllMixQuiz()" class="px-5 py-3.5 rounded-2xl bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white font-bold text-sm sm:text-base shadow-md hover:shadow-lg transition self-start sm:self-auto">
+          🚀 Sabhi Areas Mix Practice (<span id="totalAllCount">12</span> Qs)
+        </button>
+      </div>
+
+      <!-- SST Area Cards Grid -->
+      <div id="areaGrid" class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+        <!-- Populated dynamically via JS -->
+      </div>
+    </section>
+
+    <!-- VIEW 2: TOPICS SELECTION INSIDE AN SST AREA -->
+    <section id="viewTopics" class="hidden fade-in">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+        <div>
+          <span id="areaBadge" class="inline-block px-3.5 py-1 rounded-full text-xs font-extrabold uppercase tracking-wider mb-2">Area</span>
+          <h2 id="topicViewTitle" class="text-2xl sm:text-3xl font-extrabold text-slate-900">Topics Chunein</h2>
+          <p class="text-slate-600 text-sm sm:text-base mt-1">Practice shuru karne ke liye kisi ek topic par click karein.</p>
+        </div>
+        <div class="flex flex-wrap gap-2.5">
+          <button onclick="startAreaQuiz(currentArea)" class="px-4 py-3 rounded-2xl bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white font-bold text-sm shadow-sm transition">
+            ⚡ Poore Area ki Practice (<span id="btnAreaCount">0</span> Qs)
+          </button>
+          <button onclick="goHome()" class="px-4 py-3 rounded-2xl bg-white border-2 border-slate-200 hover:bg-slate-100 text-slate-700 font-bold text-sm transition">
+            ← Peeche Jayein
+          </button>
+        </div>
+      </div>
+
+      <!-- Topic Cards Grid -->
+      <div id="topicGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <!-- Populated dynamically via JS -->
+      </div>
+    </section>
+
+    <!-- VIEW 3: INTERACTIVE MCQ QUIZ PLAYER -->
+    <section id="viewQuiz" class="hidden fade-in max-w-3xl mx-auto">
+      <div class="bg-white rounded-3xl shadow-md border border-slate-200 overflow-hidden">
+        <!-- Quiz Top Bar -->
+        <div class="bg-slate-900 text-white px-5 py-4 flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <span id="quizMetaBadge" class="text-xs font-bold text-indigo-300 uppercase tracking-wider">Geography • Saur Mandal</span>
+            <h3 class="text-base sm:text-lg font-extrabold mt-0.5">Sawaal <span id="qCurrentNum">1</span> / <span id="qTotalNum">3</span></h3>
+          </div>
+          <div class="flex items-center gap-3">
+            <div class="bg-slate-800 px-3.5 py-1.5 rounded-xl text-sm font-extrabold text-emerald-400">
+              Score: <span id="liveScore">0</span>
+            </div>
+            <button onclick="exitQuiz()" class="px-3.5 py-1.5 rounded-xl bg-slate-700 hover:bg-slate-600 text-xs font-bold text-slate-200 transition">
+              Band Karein ✕
+            </button>
+          </div>
+        </div>
+
+        <!-- Progress Bar -->
+        <div class="w-full bg-slate-200 h-2.5">
+          <div id="quizProgressBar" class="bg-indigo-600 h-2.5 transition-all duration-300" style="width: 33%"></div>
+        </div>
+
+        <!-- Question & Options Body -->
+        <div class="p-5 sm:p-8">
+          <p id="questionText" class="text-lg sm:text-xl font-extrabold text-slate-900 leading-relaxed mb-6">
+            Question text yahan aayega...
+          </p>
+
+          <!-- Options Container -->
+          <div id="optionsContainer" class="space-y-3">
+            <!-- Buttons A, B, C, D injected here -->
+          </div>
+
+          <!-- Instant Feedback & Explanation Box -->
+          <div id="explanationBox" class="hidden mt-6 p-4 sm:p-5 rounded-2xl border-2 fade-in">
+            <div class="flex items-center gap-2 font-extrabold text-base mb-1.5" id="feedbackHeader">
+              <!-- Sahi ya Galat status -->
+            </div>
+            <p id="explanationText" class="text-sm sm:text-base text-slate-700 leading-relaxed"></p>
+          </div>
+
+          <!-- Next Button Footer -->
+          <div class="mt-6 flex justify-end">
+            <button id="nextQuestionBtn" onclick="nextQuestion()" class="hidden px-6 py-3.5 rounded-2xl bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white font-extrabold text-base shadow-md transition flex items-center gap-2">
+              <span id="nextBtnLabel">Agla Sawaal</span> →
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- VIEW 4: SCORE SUMMARY SCREEN -->
+    <section id="viewSummary" class="hidden fade-in max-w-2xl mx-auto">
+      <div class="bg-white rounded-3xl shadow-lg border border-slate-200 p-6 sm:p-10 text-center">
+        <div id="summaryEmoji" class="text-6xl mb-4">🏆</div>
+        <h2 class="text-2xl sm:text-3xl font-extrabold text-slate-900 mb-2">Practice Poori Hui!</h2>
+        <p id="summarySubtitle" class="text-slate-600 font-semibold mb-6">Aapne badhiya koshish ki!</p>
+
+        <!-- Stats Cards -->
+        <div class="grid grid-cols-3 gap-3 sm:gap-4 mb-8">
+          <div class="bg-indigo-50 border border-indigo-100 rounded-2xl p-4">
+            <div class="text-xs font-extrabold text-indigo-600 uppercase">Kul Sawaal</div>
+            <div id="sumTotal" class="text-2xl sm:text-3xl font-extrabold text-slate-900 mt-1">0</div>
+          </div>
+          <div class="bg-emerald-50 border border-emerald-100 rounded-2xl p-4">
+            <div class="text-xs font-extrabold text-emerald-600 uppercase">Sahi Jawab</div>
+            <div id="sumCorrect" class="text-2xl sm:text-3xl font-extrabold text-emerald-700 mt-1">0</div>
+          </div>
+          <div class="bg-amber-50 border border-amber-100 rounded-2xl p-4">
+            <div class="text-xs font-extrabold text-amber-600 uppercase">Percentage</div>
+            <div id="sumAccuracy" class="text-2xl sm:text-3xl font-extrabold text-amber-700 mt-1">0%</div>
+          </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="flex flex-col sm:flex-row justify-center gap-3">
+          <button onclick="retryCurrentQuiz()" class="px-6 py-3.5 rounded-2xl bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white font-extrabold shadow-md transition">
+            🔄 Dobara Practice Karein
+          </button>
+          <button onclick="backFromSummary()" class="px-6 py-3.5 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-extrabold transition">
+            📚 Doosra Topic / Home Chunein
+          </button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- MODAL 1: ADD NEW MCQ -->
+  <div id="addMcqModal" class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+    <div class="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-7 shadow-2xl border border-slate-200 my-auto fade-in">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-200 mb-4">
+        <h3 class="text-xl font-extrabold text-slate-900">+ Naya MCQ Daalein</h3>
+        <button onclick="closeAddModal()" class="w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold">✕</button>
+      </div>
+
+      <form id="addMcqForm" onsubmit="handleAddMcq(event)" class="space-y-3.5">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">SST Area *</label>
+            <input list="areaSuggestions" id="inpArea" required placeholder="Jaise: Geography" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500 outline-none text-sm" />
+            <datalist id="areaSuggestions">
+              <option value="Geography"></option>
+              <option value="History"></option>
+              <option value="Civics"></option>
+              <option value="Economics"></option>
+            </datalist>
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Topic Name *</label>
+            <input list="topicSuggestions" id="inpTopic" required placeholder="Jaise: Bharat ki Nadiyan" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500 outline-none text-sm" />
+            <datalist id="topicSuggestions"></datalist>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">Sawaal (Question) *</label>
+          <textarea id="inpQuestion" rows="2" required placeholder="Apna MCQ sawaal yahan likhein..." class="w-full px-3.5 py-2 rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500 outline-none text-sm"></textarea>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Option A *</label>
+            <input id="inpOptA" required placeholder="Pehla vikalp" class="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm outline-none focus:border-indigo-500" />
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Option B *</label>
+            <input id="inpOptB" required placeholder="Doosra vikalp" class="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm outline-none focus:border-indigo-500" />
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Option C *</label>
+            <input id="inpOptC" required placeholder="Teesra vikalp" class="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm outline-none focus:border-indigo-500" />
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Option D *</label>
+            <input id="inpOptD" required placeholder="Chautha vikalp" class="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm outline-none focus:border-indigo-500" />
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Sahi Answer *</label>
+            <select id="inpAnswer" class="w-full px-3 py-2.5 rounded-xl border border-slate-300 text-sm font-bold bg-white outline-none focus:ring-2 focus:ring-indigo-500">
+              <option value="A">Option A</option>
+              <option value="B">Option B</option>
+              <option value="C">Option C</option>
+              <option value="D">Option D</option>
+            </select>
+          </div>
+          <div class="sm:col-span-2">
+            <label class="block text-xs font-bold text-slate-700 mb-1">Explanation (Samjhaav)</label>
+            <input id="inpExplanation" placeholder="Kyun sahi hai (optional)" class="w-full px-3 py-2.5 rounded-xl border border-slate-300 text-sm outline-none focus:border-indigo-500" />
+          </div>
+        </div>
+
+        <div class="pt-3 flex justify-end gap-2">
+          <button type="button" onclick="closeAddModal()" class="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-sm">Cancel</button>
+          <button type="submit" class="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-sm shadow-sm">Save MCQ ✓</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL 2: VIEW / COPY DATA OR RESET -->
+  <div id="dataModal" class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl max-w-xl w-full p-6 shadow-2xl border border-slate-200 fade-in">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-200 mb-4">
+        <h3 class="text-lg font-extrabold text-slate-900">App MCQs Data Manager</h3>
+        <button onclick="closeDataModal()" class="w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold">✕</button>
+      </div>
+      <p class="text-xs text-slate-600 mb-3 leading-relaxed">
+        Aapke naye add kiye gaye MCQs browser ke <code class="bg-slate-100 px-1.5 py-0.5 rounded font-semibold">localStorage</code> mein safe rehte hain. Neeche diya gaya JSON data aap copy karke backup rakh sakte hain ya default 12 MCQs par reset kar sakte hain.
+      </p>
+      <textarea id="jsonExportArea" readonly rows="8" class="w-full p-3.5 rounded-2xl bg-slate-900 text-emerald-300 font-mono text-xs outline-none mb-4"></textarea>
+      <div class="flex flex-wrap justify-between gap-2">
+        <button onclick="resetDefaultData()" class="px-4 py-2.5 rounded-xl bg-rose-100 hover:bg-rose-200 text-rose-700 font-extrabold text-xs">
+          🔄 Reset to Default 12 MCQs
+        </button>
+        <div class="flex gap-2">
+          <button onclick="copyJsonData()" class="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs">
+            📋 Copy Data
+          </button>
+          <button onclick="closeDataModal()" class="px-4 py-2.5 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-800 font-extrabold text-xs">
+            Band Karein
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="text-center py-5 text-xs text-slate-500 border-t border-slate-200/70 bg-white/70">
+    SST Topic-Wise MCQ Practice App • Bachho ke liye aasan aur interactive practice tool
+  </footer>
+
+  <script>
+    // ==========================================
+    // 1. DEFAULT 12 MCQs DATA (SST AREA & TOPIC WISE)
+    // ==========================================
+    const DEFAULT_MCQS = [
+      // GEOGRAPHY (3 Questions)
+      {
+        id: 1,
+        area: "Geography",
+        topic: "Saur Mandal",
+        question: "Hamare saur mandal ka sabse bada grah kaun sa hai?",
+        options: { A: "Prithvi", B: "Mangal", C: "Brihaspati", D: "Shani" },
+        answer: "C",
+        explanation: "Brihaspati (Jupiter) hamare saur mandal ka sabse bada grah hai."
+      },
+      {
+        id: 2,
+        area: "Geography",
+        topic: "Bharat ki Nadiyan",
+        question: "Dakshin Bharat ki sabse lambi nadi kaun si hai?",
+        options: { A: "Kaveri", B: "Godavari", C: "Krishna", D: "Narmada" },
+        answer: "B",
+        explanation: "Godavari ko Dakshin Ganga bhi kaha jata hai aur ye Dakshin Bharat ki sabse lambi nadi hai."
+      },
+      {
+        id: 3,
+        area: "Geography",
+        topic: "Mansoon aur Jalvayu",
+        question: "Bharat mein aane wale mansoon ka mukhya srot kya hai?",
+        options: { A: "Dakshin-Pashchim Mansoon", B: "Uttar-Poorvi Mansoon", C: "Pashchimi Vikshobh", D: "Sthaniya Pavanein" },
+        answer: "A",
+        explanation: "Bharat ki lagbhag 70-75% varsha Dakshin-Pashchim mansoon se hoti hai."
+      },
+
+      // HISTORY (3 Questions)
+      {
+        id: 4,
+        area: "History",
+        topic: "Sindhu Ghati Sabhyata",
+        question: "Sindhu ghati sabhyata ka sabse pehla khoda gaya sthan kaun sa tha?",
+        options: { A: "Mohenjodaro", B: "Lothal", C: "Harappa", D: "Kalibangan" },
+        answer: "C",
+        explanation: "Harappa ki khoj 1921 mein hui thi, isliye ise Harappa sabhyata bhi kehte hain."
+      },
+      {
+        id: 5,
+        area: "History",
+        topic: "1857 ki Kranti",
+        question: "1857 ke vidroh ke samay Bharat ka Governor-General kaun tha?",
+        options: { A: "Lord Dalhousie", B: "Lord Canning", C: "Lord Ripon", D: "Lord Curzon" },
+        answer: "B",
+        explanation: "Lord Canning 1857 ke vidroh ke dauran Bharat ke Governor-General the."
+      },
+      {
+        id: 6,
+        area: "History",
+        topic: "Swatantrata Sangram",
+        question: '"Swaraj mera janmasiddh adhikar hai aur main ise lekar rahunga" kisne kaha tha?',
+        options: { A: "Mahatma Gandhi", B: "Subhas Chandra Bose", C: "Bal Gangadhar Tilak", D: "Bhagat Singh" },
+        answer: "C",
+        explanation: "Ye prasiddh nara Bal Gangadhar Tilak ne diya tha."
+      },
+
+      // CIVICS (3 Questions)
+      {
+        id: 7,
+        area: "Civics",
+        topic: "Bharatiya Samvidhan",
+        question: "Bharatiya Samvidhan ke nirman mein lagbhag kitna samay laga tha?",
+        options: { A: "1 varsh 6 mahine", B: "2 varsh 11 mahine 18 din", C: "3 varsh 5 mahine", D: "4 varsh 2 mahine" },
+        answer: "B",
+        explanation: "Samvidhan Sabha ko Samvidhan banane mein 2 varsh, 11 mahine aur 18 din lage."
+      },
+      {
+        id: 8,
+        area: "Civics",
+        topic: "Maulik Adhikar",
+        question: "Bharatiya Samvidhan mein kul kitne maulik adhikar diye gaye hain?",
+        options: { A: "5", B: "6", C: "7", D: "8" },
+        answer: "B",
+        explanation: "Vartaman mein Bharatiya nagrikon ko 6 maulik adhikar prapt hain."
+      },
+      {
+        id: 9,
+        area: "Civics",
+        topic: "Sansad aur Kanoon",
+        question: "Lok Sabha ke sadasyon ka karyakal aam taur par kitne varsh ka hota hai?",
+        options: { A: "4 varsh", B: "5 varsh", C: "6 varsh", D: "Anishchit" },
+        answer: "B",
+        explanation: "Lok Sabha ka karyakal 5 varsh ka hota hai (jab tak ki samay se pehle bhang na ho)."
+      },
+
+      // ECONOMICS (3 Questions)
+      {
+        id: 10,
+        area: "Economics",
+        topic: "Mudra aur Banking",
+        question: "Bharat mein note chhapne aur mudra niyantran ka kaam kaun karta hai?",
+        options: { A: "SBI", B: "Finance Ministry", C: "RBI", D: "SEBI" },
+        answer: "C",
+        explanation: "Bharatiya Reserve Bank (RBI) Bharat ka kendriya bank hai jo mudra jaari karta hai."
+      },
+      {
+        id: 11,
+        area: "Economics",
+        topic: "Arthvyavastha ke Kshetra",
+        question: "Krishi aur pashupalan arthvyavastha ke kis kshetra mein aate hain?",
+        options: { A: "Prathamik Kshetra", B: "Dwitiyak Kshetra", C: "Tritiyak Kshetra", D: "Chaturth Kshetra" },
+        answer: "A",
+        explanation: "Prakritik sansadhano par aadharit kaam jaise krishi Prathamik (Primary) kshetra mein aate hain."
+      },
+      {
+        id: 12,
+        area: "Economics",
+        topic: "Upbhokta Adhikar",
+        question: "Bharat mein 'Rashtriya Upbhokta Diwas' kab manaya jata hai?",
+        options: { A: "15 March", B: "24 December", C: "1 May", D: "11 July" },
+        answer: "B",
+        explanation: "24 December ko Rashtriya Upbhokta Diwas manaya jata hai."
+      }
+    ];
+
+    // Visual theme styling per SST Area
+    const AREA_THEMES = {
+      Geography: {
+        icon: "🌍",
+        subtitle: "Bhugol • Prithvi, Nadiyan aur Jalvayu",
+        bg: "bg-emerald-50",
+        border: "border-emerald-200 hover:border-emerald-500",
+        badge: "bg-emerald-100 text-emerald-800",
+        iconBg: "bg-emerald-600 text-white"
+      },
+      History: {
+        icon: "🏛️",
+        subtitle: "Itihas • Sabhyata, Kranti aur Azaadi",
+        bg: "bg-amber-50",
+        border: "border-amber-200 hover:border-amber-500",
+        badge: "bg-amber-100 text-amber-800",
+        iconBg: "bg-amber-600 text-white"
+      },
+      Civics: {
+        icon: "⚖️",
+        subtitle: "Nagrik Shastra • Samvidhan aur Adhikar",
+        bg: "bg-sky-50",
+        border: "border-sky-200 hover:border-sky-500",
+        badge: "bg-sky-100 text-sky-800",
+        iconBg: "bg-sky-600 text-white"
+      },
+      Economics: {
+        icon: "📈",
+        subtitle: "Arthashastra • Mudra, Banking aur Bazar",
+        bg: "bg-purple-50",
+        border: "border-purple-200 hover:border-purple-500",
+        badge: "bg-purple-100 text-purple-800",
+        iconBg: "bg-purple-600 text-white"
+      }
+    };
+
+    const DEFAULT_THEME = {
+      icon: "📘",
+      subtitle: "SST Topic Practice",
+      bg: "bg-indigo-50",
+      border: "border-indigo-200 hover:border-indigo-500",
+      badge: "bg-indigo-100 text-indigo-800",
+      iconBg: "bg-indigo-600 text-white"
+    };
+
+    // ==========================================
+    // 2. APPLICATION STATE
+    // ==========================================
+    let mcqList = [];
+    let currentArea = null;
+    let currentTopic = null;
+    let activeQuizQuestions = [];
+    let currentQuestionIndex = 0;
+    let score = 0;
+    let hasAnsweredCurrent = false;
+
+    // ==========================================
+    // 3. INITIALIZATION & LOCALSTORAGE
+    // ==========================================
+    function loadMcqs() {
+      try {
+        const saved = localStorage.getItem("sst_practice_mcqs_v1");
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            mcqList = parsed;
+            return;
+          }
+        }
+      } catch (e) {
+        console.error("Storage load error:", e);
+      }
+      mcqList = [...DEFAULT_MCQS];
+    }
+
+    function saveMcqs() {
+      try {
+        localStorage.setItem("sst_practice_mcqs_v1", JSON.stringify(mcqList));
+      } catch (e) {
+        console.error("Storage save error:", e);
+      }
+    }
+
+    function showToast(msg) {
+      const box = document.getElementById("toastBox");
+      document.getElementById("toastMsg").textContent = msg;
+      box.classList.remove("hidden");
+      setTimeout(() => {
+        box.classList.add("hidden");
+      }, 2800);
+    }
+
+    // ==========================================
+    // 4. VIEW SWITCHING & BREADCRUMBS
+    // ==========================================
+    function switchView(viewId) {
+      ["viewAreas", "viewTopics", "viewQuiz", "viewSummary"].forEach(id => {
+        document.getElementById(id).classList.add("hidden");
+      });
+      document.getElementById(viewId).classList.remove("hidden");
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    function updateBreadcrumbs(area, topic) {
+      const areaWrap = document.getElementById("crumbAreaWrap");
+      const areaBtn = document.getElementById("crumbAreaBtn");
+      const topicWrap = document.getElementById("crumbTopicWrap");
+      const topicText = document.getElementById("crumbTopicText");
+
+      if (area) {
+        areaWrap.classList.remove("hidden");
+        areaWrap.classList.add("flex");
+        areaBtn.textContent = area;
+      } else {
+        areaWrap.classList.add("hidden");
+        areaWrap.classList.remove("flex");
+      }
+
+      if (topic) {
+        topicWrap.classList.remove("hidden");
+        topicWrap.classList.add("flex");
+        topicText.textContent = topic;
+      } else {
+        topicWrap.classList.add("hidden");
+        topicWrap.classList.remove("flex");
+      }
+    }
+
+    // ==========================================
+    // 5. RENDER SST AREAS (HOME SCREEN)
+    // ==========================================
+    function goHome() {
+      currentArea = null;
+      currentTopic = null;
+      updateBreadcrumbs(null, null);
+      renderAreas();
+      switchView("viewAreas");
+    }
+
+    function renderAreas() {
+      const grid = document.getElementById("areaGrid");
+      document.getElementById("totalAllCount").textContent = mcqList.length;
+
+      // Group MCQs by SST_Area
+      const areasMap = {};
+      mcqList.forEach(item => {
+        if (!areasMap[item.area]) {
+          areasMap[item.area] = { topics: new Set(), count: 0 };
+        }
+        areasMap[item.area].topics.add(item.topic);
+        areasMap[item.area].count += 1;
+      });
+
+      grid.innerHTML = "";
+      Object.keys(areasMap).forEach(areaName => {
+        const info = areasMap[areaName];
+        const theme = AREA_THEMES[areaName] || DEFAULT_THEME;
+        const topicArray = Array.from(info.topics);
+
+        const card = document.createElement("div");
+        card.onclick = () => selectArea(areaName);
+        card.className = `cursor-pointer rounded-3xl p-6 border-2 ${theme.bg} ${theme.border} card-hover flex flex-col justify-between`;
+
+        card.innerHTML = `
+          <div>
+            <div class="flex items-start justify-between gap-3 mb-4">
+              <div class="w-14 h-14 rounded-2xl ${theme.iconBg} flex items-center justify-center text-3xl shadow-sm">
+                ${theme.icon}
+              </div>
+              <span class="px-3.5 py-1.5 rounded-full text-xs font-extrabold ${theme.badge}">
+                ${topicArray.length} Topics • ${info.count} MCQs
+              </span>
+            </div>
+            <h3 class="text-2xl font-extrabold text-slate-900">${areaName}</h3>
+            <p class="text-sm text-slate-600 font-medium mt-1">${theme.subtitle}</p>
+          </div>
+
+          <div class="mt-5 pt-4 border-t border-slate-200/80 flex flex-wrap gap-1.5">
+            ${topicArray.map(t => `<span class="text-xs bg-white/90 text-slate-700 font-semibold px-2.5 py-1 rounded-lg border border-slate-200/80">${t}</span>`).join("")}
+          </div>
+        `;
+        grid.appendChild(card);
+      });
+    }
+
+    // ==========================================
+    // 6. RENDER TOPICS FOR SELECTED SST AREA
+    // ==========================================
+    function selectArea(areaName) {
+      currentArea = areaName;
+      currentTopic = null;
+      updateBreadcrumbs(areaName, null);
+
+      const theme = AREA_THEMES[areaName] || DEFAULT_THEME;
+      const badge = document.getElementById("areaBadge");
+      badge.textContent = `${theme.icon} ${areaName}`;
+      badge.className = `inline-block px-3.5 py-1 rounded-full text-xs font-extrabold uppercase tracking-wider mb-2 ${theme.badge}`;
+
+      const areaMcqs = mcqList.filter(q => q.area === areaName);
+      document.getElementById("topicViewTitle").textContent = `${areaName} ke Topics`;
+      document.getElementById("btnAreaCount").textContent = areaMcqs.length;
+
+      const topicsMap = {};
+      areaMcqs.forEach(q => {
+        if (!topicsMap[q.topic]) topicsMap[q.topic] = [];
+        topicsMap[q.topic].push(q);
+      });
+
+      const topicGrid = document.getElementById("topicGrid");
+      topicGrid.innerHTML = "";
+
+      Object.keys(topicsMap).forEach((topicName, index) => {
+        const count = topicsMap[topicName].length;
+        const card = document.createElement("div");
+        card.onclick = () => startTopicQuiz(areaName, topicName);
+        card.className = "cursor-pointer bg-white rounded-2xl p-5 border-2 border-slate-200 hover:border-indigo-500 card-hover flex flex-col justify-between";
+
+        card.innerHTML = `
+          <div>
+            <div class="flex items-center justify-between mb-3">
+              <span class="w-9 h-9 rounded-xl bg-indigo-50 text-indigo-700 font-extrabold text-sm flex items-center justify-center">
+                ${index + 1}
+              </span>
+              <span class="text-xs font-extrabold px-3 py-1 rounded-full bg-slate-100 text-slate-700">
+                ${count} ${count === 1 ? "MCQ" : "MCQs"}
+              </span>
+            </div>
+            <h4 class="text-lg font-extrabold text-slate-900">${topicName}</h4>
+          </div>
+          <div class="mt-5 flex items-center text-indigo-600 font-extrabold text-sm">
+            <span>Practice Shuru Karein</span>
+            <span class="ml-1.5">→</span>
+          </div>
+        `;
+        topicGrid.appendChild(card);
+      });
+
+      switchView("viewTopics");
+    }
+
+    // ==========================================
+    // 7. QUIZ ENGINE (TOPIC / AREA / MIX)
+    // ==========================================
+    function startTopicQuiz(areaName, topicName) {
+      currentArea = areaName;
+      currentTopic = topicName;
+      activeQuizQuestions = mcqList.filter(q => q.area === areaName && q.topic === topicName);
+      updateBreadcrumbs(areaName, topicName);
+      initQuizSession(`${areaName} • ${topicName}`);
+    }
+
+    function startAreaQuiz(areaName) {
+      currentArea = areaName;
+      currentTopic = "Poore Area ki Practice";
+      activeQuizQuestions = mcqList.filter(q => q.area === areaName);
+      updateBreadcrumbs(areaName, "Poore Area ki Practice");
+      initQuizSession(`${areaName} • Sabhi Topics`);
+    }
+
+    function startAllMixQuiz() {
+      currentArea = null;
+      currentTopic = "Sabhi Areas Mix";
+      activeQuizQuestions = [...mcqList];
+      updateBreadcrumbs(null, "Sabhi Areas Mix Practice");
+      initQuizSession("Sabhi SST Areas Mix Practice");
+    }
+
+    function initQuizSession(metaTitle) {
+      if (!activeQuizQuestions.length) {
+        showToast("Is topic mein abhi koi sawaal nahi hai.");
+        return;
+      }
+      currentQuestionIndex = 0;
+      score = 0;
+      document.getElementById("quizMetaBadge").textContent = metaTitle;
+      document.getElementById("qTotalNum").textContent = activeQuizQuestions.length;
+      document.getElementById("liveScore").textContent = "0";
+      renderCurrentQuestion();
+      switchView("viewQuiz");
+    }
+
+    function renderCurrentQuestion() {
+      hasAnsweredCurrent = false;
+      const q = activeQuizQuestions[currentQuestionIndex];
+      const total = activeQuizQuestions.length;
+
+      document.getElementById("qCurrentNum").textContent = currentQuestionIndex + 1;
+      const progressPct = ((currentQuestionIndex + 1) / total) * 100;
+      document.getElementById("quizProgressBar").style.width = `${progressPct}%`;
+
+      document.getElementById("questionText").textContent = q.question;
+
+      // Reset explanation & next button
+      const expBox = document.getElementById("explanationBox");
+      expBox.classList.add("hidden");
+      const nextBtn = document.getElementById("nextQuestionBtn");
+      nextBtn.classList.add("hidden");
+      document.getElementById("nextBtnLabel").textContent =
+        currentQuestionIndex + 1 === total ? "Result Dekhein" : "Next Question";
+
+      // Build Option Buttons A, B, C, D
+      const container = document.getElementById("optionsContainer");
+      container.innerHTML = "";
+
+      ["A", "B", "C", "D"].forEach(optKey => {
+        const btn = document.createElement("button");
+        btn.id = `optBtn_${optKey}`;
+        btn.onclick = () => selectOption(optKey);
+        btn.className = "w-full text-left p-4 rounded-2xl border-2 border-slate-200 hover:border-indigo-500 hover:bg-indigo-50/40 active:scale-[0.99] transition flex items-center gap-3.5 group";
+
+        btn.innerHTML = `
+          <span id="optBadge_${optKey}" class="w-10 h-10 rounded-xl bg-slate-100 group-hover:bg-indigo-600 group-hover:text-white text-slate-700 font-extrabold text-sm flex items-center justify-center shrink-0 transition">
+            ${optKey}
+          </span>
+          <span class="text-base font-semibold text-slate-800">${q.options[optKey]}</span>
+        `;
+        container.appendChild(btn);
+      });
+    }
+
+    function selectOption(selectedKey) {
+      if (hasAnsweredCurrent) return;
+      hasAnsweredCurrent = true;
+
+      const q = activeQuizQuestions[currentQuestionIndex];
+      const isCorrect = selectedKey === q.answer;
+
+      if (isCorrect) {
+        score += 1;
+        document.getElementById("liveScore").textContent = score;
+      }
+
+      // Style all option buttons after selection
+      ["A", "B", "C", "D"].forEach(key => {
+        const btn = document.getElementById(`optBtn_${key}`);
+        const badge = document.getElementById(`optBadge_${key}`);
+        btn.disabled = true;
+        btn.classList.remove("hover:border-indigo-500", "hover:bg-indigo-50/40");
+
+        if (key === q.answer) {
+          btn.classList.remove("border-slate-200");
+          btn.classList.add("border-emerald-500", "bg-emerald-50");
+          badge.className = "w-10 h-10 rounded-xl bg-emerald-600 text-white font-extrabold text-sm flex items-center justify-center shrink-0";
+        } else if (key === selectedKey && !isCorrect) {
+          btn.classList.remove("border-slate-200");
+          btn.classList.add("border-rose-500", "bg-rose-50");
+          badge.className = "w-10 h-10 rounded-xl bg-rose-600 text-white font-extrabold text-sm flex items-center justify-center shrink-0";
+        } else {
+          btn.classList.add("opacity-60");
+        }
+      });
+
+      // Show Instant Explanation Box
+      const expBox = document.getElementById("explanationBox");
+      const fbHeader = document.getElementById("feedbackHeader");
+      const expText = document.getElementById("explanationText");
+
+      expBox.classList.remove("hidden", "border-emerald-300", "bg-emerald-50/80", "border-rose-300", "bg-rose-50/80");
+      if (isCorrect) {
+        expBox.classList.add("border-emerald-300", "bg-emerald-50/80");
+        fbHeader.innerHTML = `<span class="text-emerald-700">✅ Bilkul Sahi Jawab!</span>`;
+      } else {
+        expBox.classList.add("border-rose-300", "bg-rose-50/80");
+        fbHeader.innerHTML = `<span class="text-rose-700">❌ Galat Jawab! Sahi vikalp Option ${q.answer} hai.</span>`;
+      }
+      expText.textContent = q.explanation || `Is sawaal ka sahi jawab Option ${q.answer} hai.`;
+
+      document.getElementById("nextQuestionBtn").classList.remove("hidden");
+    }
+
+    function nextQuestion() {
+      if (currentQuestionIndex + 1 < activeQuizQuestions.length) {
+        currentQuestionIndex += 1;
+        renderCurrentQuestion();
+      } else {
+        showSummary();
+      }
+    }
+
+    function exitQuiz() {
+      if (currentArea) {
+        selectArea(currentArea);
+      } else {
+        goHome();
+      }
+    }
+
+    // ==========================================
+    // 8. SCORE SUMMARY SCREEN
+    // ==========================================
+    function showSummary() {
+      const total = activeQuizQuestions.length;
+      const accuracy = Math.round((score / total) * 100);
+
+      document.getElementById("sumTotal").textContent = total;
+      document.getElementById("sumCorrect").textContent = score;
+      document.getElementById("sumAccuracy").textContent = `${accuracy}%`;
+
+      const emojiEl = document.getElementById("summaryEmoji");
+      const subEl = document.getElementById("summarySubtitle");
+
+      if (accuracy >= 80) {
+        emojiEl.textContent = "🏆";
+        subEl.textContent = "Shabaash! Aapki taiyari bahut zabardast hai!";
+      } else if (accuracy >= 50) {
+        emojiEl.textContent = "👏";
+        subEl.textContent = "Badhiya koshish! Thodi aur practice se aap 100% la sakte hain.";
+      } else {
+        emojiEl.textContent = "📖";
+        subEl.textContent = "Koi baat nahi! Ek baar explanations padhein aur dobara try karein.";
+      }
+
+      switchView("viewSummary");
+    }
+
+    function retryCurrentQuiz() {
+      currentQuestionIndex = 0;
+      score = 0;
+      document.getElementById("liveScore").textContent = "0";
+      renderCurrentQuestion();
+      switchView("viewQuiz");
+    }
+
+    function backFromSummary() {
+      if (currentArea) {
+        selectArea(currentArea);
+      } else {
+        goHome();
+      }
+    }
+
+    // ==========================================
+    // 9. ADD NEW MCQ MODAL & DATA MANAGER
+    // ==========================================
+    function openAddModal() {
+      // Populate existing topics into datalist for convenience
+      const topicListEl = document.getElementById("topicSuggestions");
+      const uniqueTopics = [...new Set(mcqList.map(item => item.topic))];
+      topicListEl.innerHTML = uniqueTopics.map(t => `<option value="${t}"></option>`).join("");
+
+      if (currentArea) {
+        document.getElementById("inpArea").value = currentArea;
+      }
+      document.getElementById("addMcqModal").classList.remove("hidden");
+    }
+
+    function closeAddModal() {
+      document.getElementById("addMcqModal").classList.add("hidden");
+      document.getElementById("addMcqForm").reset();
+    }
+
+    function handleAddMcq(event) {
+      event.preventDefault();
+      const area = document.getElementById("inpArea").value.trim();
+      const topic = document.getElementById("inpTopic").value.trim();
+      const question = document.getElementById("inpQuestion").value.trim();
+      const optA = document.getElementById("inpOptA").value.trim();
+      const optB = document.getElementById("inpOptB").value.trim();
+      const optC = document.getElementById("inpOptC").value.trim();
+      const optD = document.getElementById("inpOptD").value.trim();
+      const answer = document.getElementById("inpAnswer").value;
+      const explanation = document.getElementById("inpExplanation").value.trim();
+
+      const newMcq = {
+        id: Date.now(),
+        area,
+        topic,
+        question,
+        options: { A: optA, B: optB, C: optC, D: optD },
+        answer,
+        explanation: explanation || `Is sawaal ka sahi jawab Option ${answer} hai.`
+      };
+
+      mcqList.push(newMcq);
+      saveMcqs();
+      closeAddModal();
+      showToast(`Naya MCQ "${area} - ${topic}" mein add ho gaya!`);
+
+      if (currentArea === area) {
+        selectArea(area);
+      } else {
+        goHome();
+      }
+    }
+
+    function openDataModal() {
+      document.getElementById("jsonExportArea").value = JSON.stringify(mcqList, null, 2);
+      document.getElementById("dataModal").classList.remove("hidden");
+    }
+
+    function closeDataModal() {
+      document.getElementById("dataModal").classList.add("hidden");
+    }
+
+    function copyJsonData() {
+      const textarea = document.getElementById("jsonExportArea");
+      textarea.select();
+      document.execCommand("copy");
+      showToast("MCQs data clipboard par copy ho gaya!");
+    }
+
+    function resetDefaultData() {
+      mcqList = [...DEFAULT_MCQS];
+      saveMcqs();
+      document.getElementById("jsonExportArea").value = JSON.stringify(mcqList, null, 2);
+      showToast("Default 12 MCQs restore ho gaye!");
+      goHome();
+    }
+
+    // Start app on page load
+    window.onload = function () {
+      loadMcqs();
+      goHome();
+    };
+  </script>
+</body>
+</html>
